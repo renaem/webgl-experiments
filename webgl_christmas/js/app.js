@@ -1,6 +1,6 @@
 var camera, scene, renderer;
 var container, controls;
-var tree;
+var tree = [];
 
 init();
 animate();
@@ -14,6 +14,7 @@ function init() {
 	camera.position.z = 500;
 
 	scene = new THREE.Scene();
+	scene.background = new THREE.Color( 0xffffff );
 
 	// lighting
 
@@ -32,11 +33,11 @@ function init() {
 
 	scene.add( pointLight );
 
-	//Create a helper for the shadow camera
+	// Create a helper outline for the shadow camera
 	var helper = new THREE.CameraHelper( pointLight.shadow.camera );
 	scene.add( helper );
 
-	// model import
+	// Model import
 
 	var onProgress = function ( xhr ) {
 
@@ -74,6 +75,7 @@ function init() {
 					object.traverse( function ( child ) {
             		    child.castShadow = true;
             		    child.receiveShadow = true;
+            		    tree.push(child); // add to array
             		} );
 
 					scene.add( object );
@@ -92,7 +94,6 @@ function init() {
 	scene.add( plane );
 
     // Set up renderer
-
 	renderer = new THREE.WebGLRenderer( { antialias: true } );
 	renderer.shadowMap.enabled = true;
 	renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -102,6 +103,15 @@ function init() {
 
 	// Add OrbitControls so that we can pan around with the mouse.
     controls = new THREE.OrbitControls(camera, renderer.domElement);
+
+    // Add DragControls so that we can drag shit around
+    var dragControls = new THREE.DragControls( tree, camera, renderer.domElement );
+	dragControls.addEventListener( 'dragstart', function () {
+		controls.enabled = false;
+	} );
+	dragControls.addEventListener( 'dragend', function () {
+		controls.enabled = true;
+	} );
 
 }
 
