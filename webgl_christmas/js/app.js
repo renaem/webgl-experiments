@@ -1,6 +1,6 @@
 var camera, scene, renderer;
 var container, controls;
-var tree = [];
+var tree;
 
 init();
 animate();
@@ -10,32 +10,39 @@ function init() {
 	container = document.createElement( 'div' );
 	document.body.appendChild( container );
 
-	camera = new THREE.PerspectiveCamera( 90, window.innerWidth / window.innerHeight, 1, 3000 );
-	camera.position.z = 500;
+	camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 3000 );
+	camera.position.z = 400;
+	camera.position.y = 100;
 
 	scene = new THREE.Scene();
-	scene.background = new THREE.Color( 0xffffff );
 
 	// lighting
 
-	var ambientLight = new THREE.AmbientLight( 0xffffff, 0.8 );
+	var ambientLight = new THREE.AmbientLight( 0xffffff, 0.3 );
 	scene.add( ambientLight );
 
-	var pointLight = new THREE.PointLight( 0xffffff, 0.5, 0, 2 );
+	var pointLight = new THREE.PointLight( 0xffffff, 0.8, 0, 1 );
 	pointLight.castShadow = true;
-	pointLight.position.y = 1000;
+	pointLight.position.y = 500;
+	pointLight.position.x = 100;
 	//Set up shadow properties for the light
 	pointLight.shadow.mapSize.width = 4096; 
 	pointLight.shadow.mapSize.height = 4096;
 	pointLight.shadow.camera.near = 0.5;   
-	pointLight.shadow.camera.far = 2000;
-	pointLight.shadow.bias = 0.01;
+	pointLight.shadow.camera.far = 2048;
+	pointLight.shadow.bias = 0.0001;
 
 	scene.add( pointLight );
 
+	var pointLight2 = new THREE.PointLight( 0xffffff, 0.3, 0, 2 );
+	pointLight2.position.y = 100;
+	pointLight2.position.x = -500;
+
+	scene.add( pointLight2 );
+
 	// Create a helper outline for the shadow camera
 	var helper = new THREE.CameraHelper( pointLight.shadow.camera );
-	scene.add( helper );
+	//scene.add( helper ); //uncomment if needed
 
 	// Model import
 
@@ -68,15 +75,15 @@ function init() {
 					object.name = "christmasTree";
 					object.castShadow = true;
 					object.receiveShadow = true;
-					console.log(object);
 					object.position.y = - 95;
 
 					// since the object is technically a group of objects, each one needs to cast shadows
 					object.traverse( function ( child ) {
             		    child.castShadow = true;
             		    child.receiveShadow = true;
-            		    tree.push(child); // add to array
             		} );
+
+            		tree = object;
 
 					scene.add( object );
 
@@ -84,17 +91,8 @@ function init() {
 
 		} );
 
-	//Create a plane that receives shadows (but does not cast them)
-	var planeGeometry = new THREE.PlaneBufferGeometry( 2000, 2000, 32, 32 );
-	var planeMaterial = new THREE.MeshStandardMaterial( { color: 0xff0000, side: THREE.DoubleSide } )
-	var plane = new THREE.Mesh( planeGeometry, planeMaterial );
-	plane.receiveShadow = true;
-	plane.rotation.x = Math.PI / 2;
-	plane.position.y = -125;
-	scene.add( plane );
-
     // Set up renderer
-	renderer = new THREE.WebGLRenderer( { antialias: true } );
+	renderer = new THREE.WebGLRenderer( { antialias: true, alpha: true } );
 	renderer.shadowMap.enabled = true;
 	renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 	renderer.setPixelRatio( window.devicePixelRatio );
@@ -103,6 +101,10 @@ function init() {
 
 	// Add OrbitControls so that we can pan around with the mouse.
     controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.minDistance = 200;
+    controls.maxDistance = 450;
+    controls.minPolarAngle = Math.PI/4;
+    controls.maxPolarAngle = Math.PI/2;
 
     // Add DragControls so that we can drag shit around
     var dragControls = new THREE.DragControls( tree, camera, renderer.domElement );
@@ -117,7 +119,10 @@ function init() {
 
 function animate() {
 
-	scene.rotation.y += 0.001;
+	// need to wrap until it loads and variable is assigned to model
+	if(tree) {
+		tree.rotation.y += 0.0005;
+	}
 
 	requestAnimationFrame( animate );
 	render();
@@ -131,4 +136,10 @@ function render() {
 	camera.lookAt( scene.position );
 	renderer.render( scene, camera );
 
+}
+
+function onWindowResize() {
+	camera.aspect = window.innerWidth / window.innerHeight;
+	camera.updateProjectionMatrix();
+	renderer.setSize( window.innerWidth, window.innerHeight );
 }
